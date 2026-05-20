@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Financiero – Factoring Camioneros</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e17;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00d4aa;
+    --accent2: #f59e0b;
+    --accent3: #6366f1;
+    --danger: #ef4444;
+    --text: #f1f5f9;
+    --muted: #64748b;
+    --muted2: #94a3b8;
+    --green: #10b981;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Grotesk', sans-serif;
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+  h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+  h2 { font-size: 14px; font-weight: 500; color: var(--muted2); text-transform: uppercase; letter-spacing: 1px; }
+  .mono { font-family: 'DM Mono', monospace; }
+
+  /* LAYOUT */
+  .grid { display: grid; grid-template-columns: 320px 1fr; gap: 20px; max-width: 1100px; margin: 0 auto; }
+  @media(max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+
+  /* HEADER */
+  .header { max-width: 1100px; margin: 0 auto 28px; display: flex; align-items: center; gap: 14px; }
+  .badge { background: var(--accent); color: #001a14; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.5px; }
+
+  /* PANEL */
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .panel + .panel { margin-top: 16px; }
+  .panel-title { font-size: 12px; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 20px; }
+
+  /* SLIDERS */
+  .field { margin-bottom: 20px; }
+  .field label { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted2); margin-bottom: 8px; }
+  .field label span { color: var(--text); font-weight: 600; font-family: 'DM Mono', monospace; font-size: 13px; }
+  input[type=range] {
+    width: 100%; height: 4px; border-radius: 2px;
+    -webkit-appearance: none; background: var(--surface2);
+    outline: none; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--accent);
+    border: 2px solid var(--bg); cursor: pointer;
+    transition: transform 0.15s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+  .field-note { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+  /* KPI CARDS */
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .kpi { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .kpi-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .kpi-value { font-size: 22px; font-weight: 700; font-family: 'DM Mono', monospace; letter-spacing: -0.5px; }
+  .kpi-value.green { color: var(--green); }
+  .kpi-value.amber { color: var(--accent2); }
+  .kpi-value.red { color: var(--danger); }
+  .kpi-value.blue { color: var(--accent3); }
+  .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+  /* CHART BARS */
+  .chart-wrap { margin-bottom: 20px; }
+  .chart-title { font-size: 12px; color: var(--muted2); margin-bottom: 12px; display: flex; justify-content: space-between; }
+  .chart { display: flex; align-items: flex-end; gap: 5px; height: 120px; padding-bottom: 0; }
+  .bar-group { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 0; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; border-radius: 3px 3px 0 0; transition: height 0.4s ease; min-height: 2px; }
+  .bar.income { background: var(--accent); opacity: 0.85; }
+  .bar.cost { background: var(--accent2); opacity: 0.7; }
+  .bar.profit { background: var(--green); opacity: 0.9; }
+  .bar-label { font-size: 9px; color: var(--muted); margin-top: 4px; }
+
+  /* SCENARIOS */
+  .scenarios { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+  .scenario { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s; text-align: center; }
+  .scenario:hover { border-color: var(--accent); }
+  .scenario.active { border-color: var(--accent); background: rgba(0,212,170,0.07); }
+  .scenario-name { font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+  .scenario-sub { font-size: 10px; color: var(--muted); }
+  .scenario.pessimist .scenario-name { color: var(--danger); }
+  .scenario.base .scenario-name { color: var(--accent2); }
+  .scenario.optimist .scenario-name { color: var(--green); }
+
+  /* TABLE */
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  td { padding: 7px 8px; border-bottom: 1px solid rgba(255,255,255,0.03); font-family: 'DM Mono', monospace; }
+  td.month-label { font-family: 'Space Grotesk', sans-serif; color: var(--muted2); }
+  td.positive { color: var(--green); }
+  td.negative { color: var(--danger); }
+  td.neutral { color: var(--accent2); }
+  tr:last-child td { border-bottom: none; font-weight: 600; }
+
+  /* BREAK EVEN */
+  .be-bar-wrap { background: var(--surface2); border-radius: 8px; padding: 16px; margin-bottom: 12px; }
+  .be-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted2); margin-bottom: 8px; }
+  .be-track { height: 12px; background: rgba(255,255,255,0.06); border-radius: 6px; overflow: hidden; }
+  .be-fill { height: 100%; border-radius: 6px; transition: width 0.5s ease; background: linear-gradient(90deg, var(--danger), var(--accent2), var(--green)); }
+
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .footnote { font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+  .tag.green { background: rgba(16,185,129,0.15); color: var(--green); }
+  .tag.red { background: rgba(239,68,68,0.12); color: var(--danger); }
+  .tag.amber { background: rgba(245,158,11,0.12); color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>Simulador Financiero</h1>
+    <p style="color:var(--muted);font-size:13px;margin-top:3px;">Factoring para camioneros · Producto de ahorro al 6% EA</p>
+  </div>
+  <div class="badge">USA</div>
+</div>
+
+<div class="grid">
+  <!-- COLUMNA IZQUIERDA: INPUTS -->
+  <div>
+    <div class="panel">
+      <div class="panel-title">Variables del negocio</div>
+
+      <div class="field">
+        <label>Capital total a fondear <span id="lbl-capital">$100,000</span></label>
+        <input type="range" id="capital" min="20000" max="500000" step="5000" value="100000">
+        <div class="field-note">Capital propio + capital captado de ahorradores</div>
+      </div>
+
+      <div class="field">
+        <label>% capital de ahorradores <span id="lbl-pct-savings">40%</span></label>
+        <input type="range" id="pct-savings" min="0" max="80" step="5" value="40">
+        <div class="field-note">El resto es capital propio tuyo</div>
+      </div>
+
+      <div class="field">
+        <label>Tasa factoring cobrada <span id="lbl-rate">3.5%</span></label>
+        <input type="range" id="rate" min="1.5" max="6" step="0.25" value="3.5">
+        <div class="field-note">Por carga/factura (ciclo promedio 30 días)</div>
+      </div>
+
+      <div class="field">
+        <label>Tasa pagada al ahorrador <span id="lbl-savings-rate">6.0%</span></label>
+        <input type="range" id="savings-rate" min="4" max="10" step="0.25" value="6">
+        <div class="field-note">Efectivo anual (EA) prometido</div>
+      </div>
+
+      <div class="field">
+        <label>Gastos operativos / mes <span id="lbl-opex">$3,000</span></label>
+        <input type="range" id="opex" min="500" max="15000" step="250" value="3000">
+        <div class="field-note">Admin, legal, software, comunicaciones</div>
+      </div>
+
+      <div class="field">
+        <label>Tasa de impago estimada <span id="lbl-default">2.0%</span></label>
+        <input type="range" id="default-rate" min="0" max="10" step="0.5" value="2">
+        <div class="field-note">% del portafolio que no paga (anual)</div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <div class="panel-title">Escenarios rápidos</div>
+      <div class="scenarios">
+        <div class="scenario pessimist" onclick="applyScenario('pesimista')">
+          <div class="scenario-name">Pesimista</div>
+          <div class="scenario-sub">Arranque lento, impagos altos</div>
+        </div>
+        <div class="scenario base active" onclick="applyScenario('base')">
+          <div class="scenario-name">Base</div>
+          <div class="scenario-sub">Crecimiento moderado</div>
+        </div>
+        <div class="scenario optimist" onclick="applyScenario('optimista')">
+          <div class="scenario-name">Optimista</div>
+          <div class="scenario-sub">Captación rápida, bajo riesgo</div>
+        </div>
+      </div>
+      <p class="footnote">Los escenarios ajustan automáticamente las variables. Puedes modificarlas manualmente después.</p>
+    </div>
+  </div>
+
+  <!-- COLUMNA DERECHA: RESULTADOS -->
+  <div>
+    <!-- KPIs principales -->
+    <div class="panel">
+      <div class="panel-title">Resultados anuales (año 1)</div>
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="kpi-label">Ingreso bruto</div>
+          <div class="kpi-value green mono" id="kpi-revenue">–</div>
+          <div class="kpi-sub">Comisiones de factoring</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Costo capital ahorradores</div>
+          <div class="kpi-value amber mono" id="kpi-cost-savings">–</div>
+          <div class="kpi-sub">6% EA sobre capital captado</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">Utilidad neta</div>
+          <div class="kpi-value mono" id="kpi-net">–</div>
+          <div class="kpi-sub">Después de todos los costos</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-label">ROE (capital propio)</div>
+          <div class="kpi-value blue mono" id="kpi-roe">–</div>
+          <div class="kpi-sub">Retorno sobre tu inversión</div>
+        </div>
+      </div>
+
+      <!-- Punto de equilibrio -->
+      <div class="be-bar-wrap">
+        <div class="be-label">
+          <span>Capital mínimo para equilibrio</span>
+          <span id="be-value" class="mono">–</span>
+        </div>
+        <div class="be-track"><div class="be-fill" id="be-fill" style="width:0%"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;">
+          <span style="font-size:10px;color:var(--muted)">$0</span>
+          <span id="be-status" class="tag">–</span>
+          <span id="be-max-label" style="font-size:10px;color:var(--muted)">–</span>
+        </div>
+      </div>
+
+      <!-- Chart mensual -->
+      <div class="chart-wrap">
+        <div class="chart-title">
+          <span>Flujo mensual – 12 meses</span>
+          <span style="font-size:10px;display:flex;gap:10px;">
+            <span style="color:var(--accent)">■ Ingreso</span>
+            <span style="color:var(--accent2)">■ Costos</span>
+            <span style="color:var(--green)">■ Utilidad</span>
+          </span>
+        </div>
+        <div class="chart" id="chart"></div>
+      </div>
+    </div>
+
+    <!-- Tabla mensual -->
+    <div class="panel" style="margin-top:16px;">
+      <div class="panel-title">Proyección mensual detallada</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Mes</th>
+            <th>Capital activo</th>
+            <th>Ingreso</th>
+            <th>Costo ahorro</th>
+            <th>Opex</th>
+            <th>Impagos</th>
+            <th>Utilidad</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+      <div class="divider"></div>
+      <p class="footnote">* El capital activo crece 5% mensual en escenario base conforme se captan más ahorradores y se reinvierten utilidades. Las cifras son estimaciones ilustrativas.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const fmt = (n, decimals=0) => '$' + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:decimals, maximumFractionDigits:decimals});
+const pct = (n) => (n*100).toFixed(1) + '%';
+
+let growthRate = 0.05; // 5% mensual crecimiento capital base
+
+function getInputs() {
+  return {
+    capital: +document.getElementById('capital').value,
+    pctSavings: +document.getElementById('pct-savings').value / 100,
+    rate: +document.getElementById('rate').value / 100,
+    savingsRate: +document.getElementById('savings-rate').value / 100,
+    opex: +document.getElementById('opex').value,
+    defaultRate: +document.getElementById('default-rate').value / 100,
+  };
+}
+
+function calc() {
+  const { capital, pctSavings, rate, savingsRate, opex, defaultRate } = getInputs();
+  const months = [];
+  let cap = capital;
+  for (let m = 1; m <= 12; m++) {
+    const savingsCap = cap * pctSavings;
+    const ownCap = cap * (1 - pctSavings);
+    const revenue = cap * rate;
+    const costSavings = savingsCap * (savingsRate / 12);
+    const costDefault = cap * (defaultRate / 12);
+    const totalCosts = costSavings + opex + costDefault;
+    const profit = revenue - totalCosts;
+    months.push({ m, cap, savingsCap, ownCap, revenue, costSavings, opex, costDefault, totalCosts, profit });
+    cap = cap * (1 + growthRate);
+  }
+  return months;
+}
+
+function update() {
+  const { capital, pctSavings, savingsRate, defaultRate } = getInputs();
+  const months = calc();
+
+  // Labels
+  document.getElementById('lbl-capital').textContent = fmt(+document.getElementById('capital').value);
+  document.getElementById('lbl-pct-savings').textContent = document.getElementById('pct-savings').value + '%';
+  document.getElementById('lbl-rate').textContent = (+document.getElementById('rate').value).toFixed(2) + '%';
+  document.getElementById('lbl-savings-rate').textContent = (+document.getElementById('savings-rate').value).toFixed(2) + '%';
+  document.getElementById('lbl-opex').textContent = fmt(+document.getElementById('opex').value);
+  document.getElementById('lbl-default').textContent = (+document.getElementById('default-rate').value).toFixed(1) + '%';
+
+  // Totales anuales
+  const totalRevenue = months.reduce((s,m) => s+m.revenue, 0);
+  const totalCostSavings = months.reduce((s,m) => s+m.costSavings, 0);
+  const totalNet = months.reduce((s,m) => s+m.profit, 0);
+  const ownCapital = capital * (1 - pctSavings);
+  const roe = ownCapital > 0 ? totalNet / ownCapital : 0;
+
+  document.getElementById('kpi-revenue').textContent = fmt(totalRevenue);
+  document.getElementById('kpi-cost-savings').textContent = fmt(totalCostSavings);
+
+  const netEl = document.getElementById('kpi-net');
+  netEl.textContent = (totalNet >= 0 ? '+' : '-') + fmt(totalNet);
+  netEl.className = 'kpi-value mono ' + (totalNet >= 0 ? 'green' : 'red');
+
+  const roeEl = document.getElementById('kpi-roe');
+  roeEl.textContent = (roe*100).toFixed(1) + '%';
+  roeEl.className = 'kpi-value mono ' + (roe > 0.15 ? 'green' : roe > 0 ? 'amber' : 'red');
+
+  // Break-even mensual
+  const { rate, opex } = getInputs();
+  const monthlySavingsCostPct = pctSavings * (savingsRate / 12);
+  const monthlyDefaultPct = defaultRate / 12;
+  const beCapital = (opex / (rate - monthlySavingsCostPct - monthlyDefaultPct));
+  document.getElementById('be-value').textContent = beCapital > 0 ? fmt(beCapital) : 'N/A';
+  const beMax = Math.max(capital * 2, beCapital * 1.5);
+  const bePct = Math.min(100, (capital / beCapital) * 100);
+  document.getElementById('be-fill').style.width = Math.max(0, bePct) + '%';
+  document.getElementById('be-max-label').textContent = fmt(beMax);
+  const beStatusEl = document.getElementById('be-status');
+  if (capital >= beCapital) {
+    beStatusEl.textContent = '✓ Por encima del equilibrio';
+    beStatusEl.className = 'tag green';
+  } else {
+    beStatusEl.textContent = '✗ Por debajo del equilibrio';
+    beStatusEl.className = 'tag red';
+  }
+
+  // Chart
+  const maxIncome = Math.max(...months.map(m => m.revenue));
+  const chartEl = document.getElementById('chart');
+  chartEl.innerHTML = '';
+  months.forEach(m => {
+    const incomeH = Math.round((m.revenue / maxIncome) * 100);
+    const costH = Math.round((m.totalCosts / maxIncome) * 100);
+    const profitH = Math.max(0, Math.round((m.profit / maxIncome) * 100));
+    const monthNames = ['E','F','M','A','M','J','J','A','S','O','N','D'];
+    chartEl.innerHTML += `
+      <div class="bar-group">
+        <div class="bar income" style="height:${incomeH}px" title="Ingreso: ${fmt(m.revenue)}"></div>
+        <div class="bar cost" style="height:${costH}px" title="Costos: ${fmt(m.totalCosts)}"></div>
+        <div class="bar profit" style="height:${profitH}px" title="Utilidad: ${fmt(m.profit)}"></div>
+        <div class="bar-label">${monthNames[m.m-1]}</div>
+      </div>`;
+  });
+
+  // Table
+  let tbody = '';
+  months.forEach(m => {
+    const cls = m.profit >= 0 ? 'positive' : 'negative';
+    tbody += `<tr>
+      <td class="month-label">Mes ${m.m}</td>
+      <td>${fmt(m.cap)}</td>
+      <td class="positive">${fmt(m.revenue)}</td>
+      <td class="neutral">${fmt(m.costSavings)}</td>
+      <td style="color:var(--muted2)">${fmt(m.opex)}</td>
+      <td style="color:var(--danger)">${fmt(m.costDefault)}</td>
+      <td class="${cls}">${m.profit>=0?'+':'-'}${fmt(m.profit)}</td>
+    </tr>`;
+  });
+  // Totals row
+  const tRev = months.reduce((s,m)=>s+m.revenue,0);
+  const tCS = months.reduce((s,m)=>s+m.costSavings,0);
+  const tOp = months.reduce((s,m)=>s+m.opex,0);
+  const tDef = months.reduce((s,m)=>s+m.costDefault,0);
+  const tNet2 = months.reduce((s,m)=>s+m.profit,0);
+  tbody += `<tr>
+    <td class="month-label" style="color:var(--text)">TOTAL</td>
+    <td>–</td>
+    <td class="positive">${fmt(tRev)}</td>
+    <td class="neutral">${fmt(tCS)}</td>
+    <td style="color:var(--muted2)">${fmt(tOp)}</td>
+    <td style="color:var(--danger)">${fmt(tDef)}</td>
+    <td class="${tNet2>=0?'positive':'negative'}">${tNet2>=0?'+':'-'}${fmt(tNet2)}</td>
+  </tr>`;
+  document.getElementById('table-body').innerHTML = tbody;
+}
+
+function applyScenario(s) {
+  document.querySelectorAll('.scenario').forEach(el => el.classList.remove('active'));
+  const scenarios = {
+    pesimista: { capital:50000, pctSavings:30, rate:2.5, savingsRate:6, opex:4000, defaultRate:5, growth:0.02 },
+    base:      { capital:100000, pctSavings:40, rate:3.5, savingsRate:6, opex:3000, defaultRate:2, growth:0.05 },
+    optimista: { capital:200000, pctSavings:50, rate:4.5, savingsRate:6, opex:2500, defaultRate:1, growth:0.08 },
+  };
+  const sc = scenarios[s];
+  growthRate = sc.growth;
+  document.getElementById('capital').value = sc.capital;
+  document.getElementById('pct-savings').value = sc.pctSavings;
+  document.getElementById('rate').value = sc.rate;
+  document.getElementById('savings-rate').value = sc.savingsRate;
+  document.getElementById('opex').value = sc.opex;
+  document.getElementById('default-rate').value = sc.defaultRate;
+  document.querySelector('.scenario.' + (s === 'pesimista' ? 'pessimist' : s === 'base' ? 'base' : 'optimist')).classList.add('active');
+  update();
+}
+
+// Bind sliders
+['capital','pct-savings','rate','savings-rate','opex','default-rate'].forEach(id => {
+  document.getElementById(id).addEventListener('input', update);
+});
+
+update();
+</script>
+</body>
+</html>
